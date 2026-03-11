@@ -6,6 +6,9 @@
 
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
+#ifdef SWIGLIB
+#include <vector>
+#endif  // SWIGLIB
 #include "IRremoteESP8266.h"
 
 // Originally from https://github.com/shirriff/Arduino-IRremote/
@@ -14,8 +17,14 @@
 
 #if TEST || UNIT_TEST
 #define VIRTUAL virtual
+#ifdef SWIGLIB
+#define VIRTUALMS
+#else  // SWIGLIB
+#define VIRTUALMS virtual
+#endif  // SWIGLIB
 #else
 #define VIRTUAL
+#define VIRTUALMS
 #endif
 
 // Constants
@@ -42,6 +51,11 @@ const uint32_t kDefaultMessageGap = 100000;
 /// Placeholder for missing sensor temp value
 /// @note Not using "-1" as it may be a valid external temp
 const float kNoTempValue = -100.0;
+
+#ifdef SWIGLIB
+// Global
+extern std::vector<int> timingList;
+#endif  // SWIGLIB
 
 /// Enumerators and Structures for the Common A/C API.
 namespace stdAc {
@@ -213,6 +227,11 @@ enum whirlpool_ac_remote_model_t {
   DG11J191,
 };
 
+// Kelon/Hisense (Kelon168) A/C remote model numbers
+enum kelon168_ac_remote_model_t {
+  DG11R201 = 1,  // RCH-R0Y3 too?
+};
+
 /// LG A/C model numbers
 enum lg_ac_remote_model_t {
   GE6711AR2853M = 1,  // (1) LG 28-bit Protocol (default)
@@ -228,6 +247,14 @@ enum argo_ac_remote_model_t {
   SAC_WREM3        // (2) ARGO WREM3 remote (touch buttons), bit-len vary by cmd
 };
 
+/// Toshiba A/C model numbers
+enum toshiba_ac_remote_model_t {
+  kToshibaGenericRemote_A = 0,  // Default from existing codebase
+  kToshibaGenericRemote_B = 1,  // Newly discovered remote control b, applies to
+  // many remote models such as WA-TH03A, WA-TH04A etc.
+};
+
+#ifndef SWIG
 // Classes
 
 /// Class for sending all basic IR protocols.
@@ -631,11 +658,13 @@ class IRsend {
                         uint16_t nbytes = kCarrierAc128StateLength,
                         uint16_t repeat = kCarrierAc128MinRepeat);
 #endif  // SEND_CARRIER_AC128
-#if (SEND_HAIER_AC || SEND_HAIER_AC_YRW02 || SEND_HAIER_AC176)
+#if (SEND_HAIER_AC || SEND_HAIER_AC_YRW02 || SEND_HAIER_AC160 || \
+    SEND_HAIER_AC176)
   void sendHaierAC(const unsigned char data[],
                    const uint16_t nbytes = kHaierACStateLength,
                    const uint16_t repeat = kHaierAcDefaultRepeat);
-#endif  // (SEND_HAIER_AC || SEND_HAIER_AC_YRW02 || SEND_HAIER_AC176)
+#endif  // (SEND_HAIER_AC || SEND_HAIER_AC_YRW02 || SEND_HAIER_AC160 ||
+        //  SEND_HAIER_AC176)
 #if SEND_HAIER_AC_YRW02
   void sendHaierACYRW02(const unsigned char data[],
                         const uint16_t nbytes = kHaierACYRW02StateLength,
@@ -863,7 +892,7 @@ class IRsend {
 #if SEND_KELON168
   void sendKelon168(const unsigned char data[],
                     const uint16_t nbytes = kKelon168StateLength,
-                    const uint16_t repeat = kNoRepeat);
+                    const uint16_t repeat = kKelon168DefaultRepeat);
 #endif  // SEND_KELON168
 #if SEND_BOSE
   void sendBose(const uint64_t data, const uint16_t nbits = kBoseBits,
@@ -907,6 +936,16 @@ class IRsend {
                     const uint16_t nbytes = kYorkStateLength,
                     const uint16_t repeat = kNoRepeat);
 #endif  // SEND_YORK
+#if SEND_BLUESTARHEAVY
+  void sendBluestarHeavy(const unsigned char data[],
+                       const uint16_t nbytes = kBluestarHeavyStateLength,
+                       const uint16_t repeat = kNoRepeat);
+#endif  // SEND_BLUESTARHEAVY
+#if SEND_EUROM
+  void sendEurom(const uint8_t data[],
+                 const uint16_t nbytes = kEuromStateLength,
+                 const uint16_t repeat = kNoRepeat);
+#endif  // SEND_EUROM
 
  protected:
 #ifdef UNIT_TEST
@@ -939,5 +978,5 @@ class IRsend {
                  const uint16_t repeat, const uint16_t freq);
 #endif  // SEND_SONY
 };
-
+#endif  // SWIG
 #endif  // IRSEND_H_
